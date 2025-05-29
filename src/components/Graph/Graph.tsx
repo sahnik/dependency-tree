@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import ReactFlow, {
   Controls,
   Background,
@@ -14,7 +14,7 @@ import 'reactflow/dist/style.css';
 import CustomNode from '../CustomNode.js';
 import SearchBar from '../SearchBar/SearchBar.js';
 import type { JobData, GraphNode, GraphEdge } from '../../types/index.js';
-import { parseJobData } from '../../utils/dataParser.js';
+import { parseJobData, type LayoutDirection } from '../../utils/dataParser.js';
 
 interface GraphProps {
   data: JobData[];
@@ -26,17 +26,18 @@ const nodeTypes = {
 
 const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   const { fitView, setCenter, getNode } = useReactFlow();
+  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB');
   
-  const initialData = useMemo(() => parseJobData(data), [data]);
+  const initialData = useMemo(() => parseJobData(data, layoutDirection), [data, layoutDirection]);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialData.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.edges);
 
   useEffect(() => {
-    const newData = parseJobData(data);
+    const newData = parseJobData(data, layoutDirection);
     setNodes(newData.nodes);
     setEdges(newData.edges);
     setTimeout(() => fitView({ padding: 0.1 }), 100);
-  }, [data, setNodes, setEdges, fitView]);
+  }, [data, layoutDirection, setNodes, setEdges, fitView]);
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -98,6 +99,84 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#0f172a' }}>
       <SearchBar onSearch={handleSearch} />
+      
+      {/* Layout Direction Selector */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 5,
+        backgroundColor: '#1e293b',
+        padding: '12px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'center'
+      }}>
+        <span style={{ color: '#94a3b8', fontSize: '14px', marginRight: '8px' }}>Layout:</span>
+        <button
+          onClick={() => setLayoutDirection('TB')}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: layoutDirection === 'TB' ? '#3b82f6' : '#334155',
+            color: '#e2e8f0',
+            fontSize: '12px',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          Top-Bottom
+        </button>
+        <button
+          onClick={() => setLayoutDirection('LR')}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: layoutDirection === 'LR' ? '#3b82f6' : '#334155',
+            color: '#e2e8f0',
+            fontSize: '12px',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          Left-Right
+        </button>
+        <button
+          onClick={() => setLayoutDirection('BT')}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: layoutDirection === 'BT' ? '#3b82f6' : '#334155',
+            color: '#e2e8f0',
+            fontSize: '12px',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          Bottom-Top
+        </button>
+        <button
+          onClick={() => setLayoutDirection('RL')}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '4px',
+            border: 'none',
+            backgroundColor: layoutDirection === 'RL' ? '#3b82f6' : '#334155',
+            color: '#e2e8f0',
+            fontSize: '12px',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          Right-Left
+        </button>
+      </div>
+      
       <ReactFlow
         nodes={nodes}
         edges={edges}

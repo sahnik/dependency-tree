@@ -1,20 +1,35 @@
+import dagre from 'dagre';
 import type { JobData, GraphNode, GraphEdge } from '../types/index.js';
 
-export function parseJobData(data: JobData[]): { nodes: GraphNode[]; edges: GraphEdge[] } {
+const nodeWidth = 172;
+const nodeHeight = 36;
+
+export type LayoutDirection = 'TB' | 'BT' | 'LR' | 'RL';
+
+export function parseJobData(
+  data: JobData[], 
+  direction: LayoutDirection = 'TB'
+): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
-  const nodePositions = new Map<string, { x: number; y: number }>();
+  
+  // Create a new directed graph
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  
+  // Set graph options
+  dagreGraph.setGraph({
+    rankdir: direction,
+    align: 'UL',
+    nodesep: 50,
+    ranksep: 50,
+    marginx: 20,
+    marginy: 20
+  });
 
-  // Create nodes
-  data.forEach((job, index) => {
-    const angle = (index * 2 * Math.PI) / data.length;
-    const radius = 300;
-    const x = Math.cos(angle) * radius + 400;
-    const y = Math.sin(angle) * radius + 300;
-
-    nodePositions.set(job.job, { x, y });
-
-    nodes.push({
+  // Create nodes and add them to the dagre graph
+  data.forEach((job) => {
+    const node: GraphNode = {
       id: job.job,
       type: 'custom',
       data: {
@@ -23,14 +38,18 @@ export function parseJobData(data: JobData[]): { nodes: GraphNode[]; edges: Grap
         targets: job.targets,
         color: job.color || '#6366f1'
       },
-      position: { x, y }
-    });
+      position: { x: 0, y: 0 } // Will be updated by dagre
+    };
+    
+    nodes.push(node);
+    dagreGraph.setNode(job.job, { width: nodeWidth, height: nodeHeight });
   });
 
-  // Create edges based on dependencies
+  // Create edges and add them to the dagre graph
   data.forEach((job) => {
     job.dependencies.forEach((dep) => {
-      if (nodePositions.has(dep)) {
+      // Check if the dependency exists as a node
+      if (data.some(j => j.job === dep)) {
         edges.push({
           id: `${dep}-${job.job}`,
           source: dep,
@@ -45,27 +64,23 @@ export function parseJobData(data: JobData[]): { nodes: GraphNode[]; edges: Grap
             color: '#64748b',
           }
         });
+        
+        dagreGraph.setEdge(dep, job.job);
       }
     });
   });
 
-  return { nodes, edges };
-}
+  // Run the layout algorithm
+  dagre.layout(dagreGraph);
 
-export function layoutNodes(nodes: GraphNode[]): GraphNode[] {
-  // Simple circular layout
-  const radius = 300;
-  const centerX = 400;
-  const centerY = 300;
-
-  return nodes.map((node, index) => {
-    const angle = (index * 2 * Math.PI) / nodes.length;
-    return {
-      ...node,
-      position: {
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle)
-      }
+  // Update node positions with the calculated layout
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2
     };
   });
+
+  return { nodes, edges };
 }

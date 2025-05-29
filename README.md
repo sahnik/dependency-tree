@@ -5,6 +5,8 @@ An interactive dependency visualization application built with React and react-f
 ## Features
 
 - **Interactive Graph Visualization**
+  - Automatic tree layout using Dagre algorithm
+  - Multiple layout directions (Top-Bottom, Left-Right, Bottom-Top, Right-Left)
   - Zoom and pan controls
   - Draggable nodes
   - Animated edges with directional arrows
@@ -100,4 +102,5 @@ src/
 - TypeScript
 - Vite
 - react-flow (ReactFlow)
+- Dagre (Graph layout algorithm)
 - CSS3 with custom styling

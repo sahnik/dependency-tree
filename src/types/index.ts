@@ -1,3 +1,5 @@
+import type { Edge } from 'reactflow';
+
 export interface JobData {
   job: string;
   dependencies: string[];
@@ -18,9 +20,5 @@ export interface GraphNode {
   position: { x: number; y: number };
 }
 
-export interface GraphEdge {
-  id: string;
-  source: string;
-  target: string;
-  animated?: boolean;
-}
+// Use ReactFlow's Edge type instead of custom GraphEdge
+export type GraphEdge = Edge;

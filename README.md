@@ -138,8 +138,52 @@ src/
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
+- `npm run build:standalone` - Build as a single HTML file (for offline use)
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build
+
+### Running the Production Build
+
+After building the app with `npm run build`, you need to serve it through an HTTP server. You cannot open the `index.html` file directly from the file system due to CORS restrictions.
+
+**Option 1: Use Vite's preview command (recommended)**
+```bash
+npm run preview
+```
+This will serve the production build at `http://localhost:4173`
+
+**Option 2: Use a static file server**
+```bash
+# If you have Python installed
+python -m http.server 8000 --directory dist
+
+# Or use npx serve
+npx serve dist
+
+# Or use http-server
+npx http-server dist
+```
+
+**Option 3: Deploy to a hosting service**
+- Netlify: Drag and drop the `dist` folder to [Netlify](https://www.netlify.com/)
+- Vercel: Run `npx vercel` in the project directory
+- GitHub Pages: Use the `gh-pages` branch with the `dist` folder
+
+### Offline/Standalone Usage
+
+If you need to run the app without a web server (e.g., from the file system), use the standalone build:
+
+```bash
+npm run build:standalone
+```
+
+This creates a single `dist/index.html` file that contains all CSS and JavaScript inline. You can:
+- Open this file directly in a browser (double-click or `file://` URL)
+- Email it as an attachment
+- Share it via USB drive
+- Use it in environments without web servers
+
+The standalone file is larger (~450KB) but completely self-contained and works offline.
 
 ## Technologies Used
 

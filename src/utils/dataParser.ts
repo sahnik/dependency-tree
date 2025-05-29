@@ -1,4 +1,5 @@
 import dagre from 'dagre';
+import { MarkerType } from 'reactflow';
 import type { JobData, GraphNode, GraphEdge } from '../types/index.js';
 
 const nodeWidth = 172;
@@ -58,7 +59,7 @@ export function parseJobData(
           animated: true,
           style: { stroke: '#64748b', strokeWidth: 2 },
           markerEnd: {
-            type: 'arrowclosed',
+            type: MarkerType.ArrowClosed,
             width: 20,
             height: 20,
             color: '#64748b',

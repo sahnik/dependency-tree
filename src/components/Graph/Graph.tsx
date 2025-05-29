@@ -7,9 +7,11 @@ import ReactFlow, {
   addEdge,
   useReactFlow,
   ReactFlowProvider,
-  MiniMap
+  MiniMap,
+  BackgroundVariant,
+  MarkerType
 } from 'reactflow';
-import type { Connection, Edge, Node } from 'reactflow';
+import type { Connection, Edge, DefaultEdgeOptions } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import CustomNode from '../CustomNode.js';
@@ -82,7 +84,7 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   );
 
   // Optimized search with debouncing
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   
   const handleSearch = useCallback((searchTerm: string) => {
     // Clear previous timeout
@@ -151,12 +153,12 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
     setSearchTimeout(timeout);
   }, [searchIndex, setNodes, setCenter, getNode, searchTimeout]);
 
-  const defaultEdgeOptions = {
+  const defaultEdgeOptions: DefaultEdgeOptions = {
     type: 'smoothstep',
     animated: false, // Disable animation for better performance
     style: { stroke: '#64748b', strokeWidth: 2 },
     markerEnd: {
-      type: 'arrowclosed',
+      type: MarkerType.ArrowClosed,
       width: 20,
       height: 20,
       color: '#64748b',
@@ -345,17 +347,9 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
         zoomOnDoubleClick={false}
         attributionPosition="bottom-left"
       >
-        <Controls 
-          style={{
-            button: {
-              backgroundColor: '#1e293b',
-              color: '#e2e8f0',
-              border: '1px solid #334155',
-            }
-          }}
-        />
+        <Controls />
         <Background 
-          variant="dots" 
+          variant={BackgroundVariant.Dots} 
           gap={12} 
           size={1} 
           color="#1e293b"

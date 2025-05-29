@@ -1,0 +1,58 @@
+[
+  {
+    "job": "Data Ingestion",
+    "dependencies": [],
+    "sources": ["raw-data-api", "file-uploads"],
+    "targets": ["data-lake/raw"],
+    "color": "#0ea5e9"
+  },
+  {
+    "job": "Data Validation",
+    "dependencies": ["Data Ingestion"],
+    "sources": ["data-lake/raw"],
+    "targets": ["data-lake/validated"],
+    "color": "#8b5cf6"
+  },
+  {
+    "job": "Data Transformation",
+    "dependencies": ["Data Validation"],
+    "sources": ["data-lake/validated"],
+    "targets": ["data-warehouse/staging"],
+    "color": "#10b981"
+  },
+  {
+    "job": "ML Feature Engineering",
+    "dependencies": ["Data Transformation"],
+    "sources": ["data-warehouse/staging"],
+    "targets": ["feature-store"],
+    "color": "#f59e0b"
+  },
+  {
+    "job": "Model Training",
+    "dependencies": ["ML Feature Engineering"],
+    "sources": ["feature-store"],
+    "targets": ["model-registry"],
+    "color": "#ec4899"
+  },
+  {
+    "job": "Business Analytics",
+    "dependencies": ["Data Transformation"],
+    "sources": ["data-warehouse/staging"],
+    "targets": ["analytics-db"],
+    "color": "#3b82f6"
+  },
+  {
+    "job": "Report Generation",
+    "dependencies": ["Business Analytics"],
+    "sources": ["analytics-db"],
+    "targets": ["reports/daily", "reports/weekly"],
+    "color": "#06b6d4"
+  },
+  {
+    "job": "Model Deployment",
+    "dependencies": ["Model Training"],
+    "sources": ["model-registry"],
+    "targets": ["production-api"],
+    "color": "#ef4444"
+  }
+]

@@ -1,0 +1,47 @@
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* React Flow overrides for dark theme */
+.react-flow__attribution {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.react-flow__controls {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.react-flow__controls button {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-bottom: 1px solid #334155;
+}
+
+.react-flow__controls button:hover {
+  background: #334155;
+}
+
+.react-flow__controls button svg {
+  fill: currentColor;
+}
+
+/* Custom node styles */
+.custom-node {
+  transition: all 0.2s ease;
+}
+
+.custom-node:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Search input focus styles */
+input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}

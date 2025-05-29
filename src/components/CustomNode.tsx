@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Handle, Position } from 'reactflow';
 
 interface CustomNodeData {
@@ -12,8 +12,22 @@ interface CustomNodeProps {
   data: CustomNodeData;
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
+const CustomNode: React.FC<CustomNodeProps> = memo(({ data }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  
+  const handleMouseEnter = useCallback(() => {
+    // Only show tooltip if there's content to show
+    if (data.sources.length > 0 || data.targets.length > 0) {
+      setShowTooltip(true);
+    }
+  }, [data.sources.length, data.targets.length]);
+  
+  const handleMouseLeave = useCallback(() => {
+    setShowTooltip(false);
+  }, []);
+
+  // Memoize tooltip content to avoid re-creating on every render
+  const hasTooltipContent = data.sources.length > 0 || data.targets.length > 0;
 
   return (
     <div
@@ -32,14 +46,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
         fontSize: '14px',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
       }}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#555' }} />
       
       {data.label}
       
-      {showTooltip && (data.sources.length > 0 || data.targets.length > 0) && (
+      {showTooltip && hasTooltipContent && (
         <div
           style={{
             position: 'absolute',
@@ -55,7 +69,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             minWidth: '200px',
             zIndex: 1000,
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            border: '1px solid #334155'
+            border: '1px solid #334155',
+            pointerEvents: 'none' // Prevent tooltip from interfering with mouse events
           }}
         >
           {data.sources.length > 0 && (
@@ -84,6 +99,19 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
       <Handle type="source" position={Position.Bottom} style={{ background: '#555' }} />
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Only re-render if data actually changed
+  return (
+    prevProps.data.label === nextProps.data.label &&
+    prevProps.data.color === nextProps.data.color &&
+    prevProps.data.sources.length === nextProps.data.sources.length &&
+    prevProps.data.targets.length === nextProps.data.targets.length &&
+    prevProps.data.sources.every((s, i) => s === nextProps.data.sources[i]) &&
+    prevProps.data.targets.every((t, i) => t === nextProps.data.targets[i])
+  );
+});
+
+CustomNode.displayName = 'CustomNode';
 
 export default CustomNode;

@@ -30,6 +30,51 @@ An interactive dependency visualization application built with React and react-f
   - VSCode-inspired dark theme
   - Consistent styling throughout the application
 
+## Performance Optimizations
+
+This application is optimized to handle large dependency graphs with up to 1000+ nodes:
+
+### Implemented Optimizations
+
+1. **React Performance**
+   - `React.memo` on custom node components to prevent unnecessary re-renders
+   - `useCallback` and `useMemo` hooks for expensive operations
+   - Custom comparison function for node equality checks
+   - React 18's `useTransition` for non-blocking updates
+
+2. **Search Optimization**
+   - Indexed search using Map data structure for O(1) lookups
+   - Debounced search input (300ms) to reduce re-renders
+   - Efficient partial matching algorithm
+
+3. **Rendering Optimizations**
+   - Optional edge rendering for graphs with 100+ nodes
+   - Optional minimap for navigation in large graphs
+   - Disabled animations on edges for better performance
+   - Viewport-based rendering (ReactFlow handles this automatically)
+
+4. **Layout Calculation**
+   - Asynchronous layout calculation with loading indicator
+   - Efficient Dagre algorithm for hierarchical layouts
+   - Optimized node positioning
+
+5. **User Controls**
+   - Performance options panel for large graphs
+   - Toggle edge visibility to improve rendering speed
+   - Toggle minimap for better navigation
+
+### Performance Testing
+
+The app includes built-in test data generators:
+- Click "Test Data" to load graphs with 50, 100, 500, or 1000 nodes
+- "Realistic" options generate multi-stage pipeline data
+
+### Recommendations for Large Graphs
+
+- For 500+ nodes: Consider hiding edges initially
+- For 1000+ nodes: Use search to navigate instead of manual panning
+- Use keyboard shortcuts for better navigation (arrow keys, +/- for zoom)
+
 ## Installation
 
 ```bash
@@ -98,9 +143,9 @@ src/
 
 ## Technologies Used
 
-- React 19
+- React 19 (with Concurrent Features)
 - TypeScript
 - Vite
-- react-flow (ReactFlow)
+- react-flow (ReactFlow) - Optimized graph rendering
 - Dagre (Graph layout algorithm)
 - CSS3 with custom styling

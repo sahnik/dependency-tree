@@ -17,7 +17,7 @@ import 'reactflow/dist/style.css';
 import CustomNode from '../CustomNode.js';
 import CustomEdge from '../CustomEdge.js';
 import SearchBar from '../SearchBar/SearchBar.js';
-import type { JobData, GraphNode, GraphEdge } from '../../types/index.js';
+import type { JobData, GraphNode } from '../../types/index.js';
 import { parseJobData, type LayoutDirection, type LayoutAlgorithm, type LayoutOptions } from '../../utils/dataParser.js';
 
 interface GraphProps {

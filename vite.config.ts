@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     // Inline all assets to avoid CORS issues
     assetsInlineLimit: 100000000, // 100MB - effectively inline everything
+    chunkSizeWarningLimit: 2000, // 2MB limit - ELK is a large library
     rollupOptions: {
       output: {
         // Single file output

@@ -15,6 +15,7 @@ import type { Connection, Edge, DefaultEdgeOptions } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import CustomNode from '../CustomNode.js';
+import CustomEdge from '../CustomEdge.js';
 import SearchBar from '../SearchBar/SearchBar.js';
 import type { JobData, GraphNode, GraphEdge } from '../../types/index.js';
 import { parseJobData, type LayoutDirection } from '../../utils/dataParser.js';
@@ -25,6 +26,10 @@ interface GraphProps {
 
 const nodeTypes = {
   custom: CustomNode,
+};
+
+const edgeTypes = {
+  custom: CustomEdge,
 };
 
 // Performance settings for large graphs
@@ -41,6 +46,7 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   const [showEdges, setShowEdges] = useState(true);
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [, setSelectedEdgeId] = useState<string | null>(null);
   
   // Create a search index for better performance
   const searchIndex = useMemo(() => {
@@ -154,9 +160,8 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   }, [searchIndex, setNodes, setCenter, getNode, searchTimeout]);
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
-    type: 'smoothstep',
+    type: 'custom',
     animated: false, // Disable animation for better performance
-    style: { stroke: '#64748b', strokeWidth: 2 },
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 20,
@@ -230,6 +235,9 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
             />
             Show edges
           </label>
+          <div style={{ color: '#64748b', fontSize: '11px', marginTop: '4px' }}>
+            Click edges to highlight connections
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '14px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -333,10 +341,39 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onEdgeClick={(_, edge) => {
+          setSelectedEdgeId(edge.id);
+          // Highlight connected nodes
+          startTransition(() => {
+            setNodes((nds) =>
+              nds.map((node) => ({
+                ...node,
+                style: node.id === edge.source || node.id === edge.target
+                  ? { opacity: 1, filter: 'drop-shadow(0 0 8px #3b82f6)' }
+                  : { opacity: 0.3 }
+              }))
+            );
+          });
+        }}
+        onPaneClick={() => {
+          setSelectedEdgeId(null);
+          // Reset node highlighting
+          startTransition(() => {
+            setNodes((nds) =>
+              nds.map((node) => ({
+                ...node,
+                style: undefined
+              }))
+            );
+          });
+        }}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         style={{ backgroundColor: '#0f172a' }}
+        // Selection
+        selectNodesOnDrag={false}
         // Performance optimizations
         minZoom={0.1}
         maxZoom={2}
@@ -344,6 +381,7 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
         nodesConnectable={false}
         elementsSelectable={!isLoading}
         panOnScroll={true}
+        selectionOnDrag={true}
         zoomOnDoubleClick={false}
         attributionPosition="bottom-left"
       >

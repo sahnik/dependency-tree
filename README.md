@@ -9,7 +9,9 @@ An interactive dependency visualization application built with React and react-f
   - Multiple layout directions (Top-Bottom, Left-Right, Bottom-Top, Right-Left)
   - Zoom and pan controls
   - Draggable nodes
-  - Animated edges with directional arrows
+  - Selectable edges with hover highlighting
+  - Connected node highlighting when edge is selected
+  - Directional arrows on edges
   - Color-coded nodes based on job configuration
 
 - **Search Functionality**

@@ -55,9 +55,8 @@ export function parseJobData(
           id: `${dep}-${job.job}`,
           source: dep,
           target: job.job,
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#64748b', strokeWidth: 2 },
+          type: 'custom',
+          animated: false,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 20,

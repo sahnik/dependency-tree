@@ -34,6 +34,17 @@ body {
 .react-flow__edge-path {
   stroke: #64748b;
   stroke-width: 2;
+  transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+  stroke-width: 3 !important;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #22d3ee !important;
+  stroke-width: 3 !important;
 }
 
 .react-flow__edge.animated path {
@@ -53,9 +64,26 @@ body {
   stroke: #64748b;
 }
 
+/* Selected edge markers */
+.react-flow__edge.selected marker polygon {
+  fill: #3b82f6 !important;
+  stroke: #3b82f6 !important;
+}
+
+/* Hovered edge markers */
+.react-flow__edge:hover marker polygon {
+  fill: #22d3ee !important;
+  stroke: #22d3ee !important;
+}
+
 /* Ensure markers are visible */
 marker {
   overflow: visible;
+}
+
+/* Node highlight effect */
+.react-flow__node {
+  transition: opacity 0.2s, filter 0.2s;
 }
 
 /* Handle styles */

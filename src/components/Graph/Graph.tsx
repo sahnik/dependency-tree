@@ -320,7 +320,7 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
       {/* Layout Direction Selector */}
       <div style={{
         position: 'absolute',
-        bottom: '20px',
+        bottom: showMiniMap ? '180px' : '20px',
         right: '20px',
         zIndex: 5,
         backgroundColor: '#1e293b',
@@ -329,7 +329,8 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         display: 'flex',
         gap: '8px',
-        alignItems: 'center'
+        alignItems: 'center',
+        transition: 'bottom 0.3s ease'
       }}>
         <span style={{ color: '#94a3b8', fontSize: '14px', marginRight: '8px' }}>Layout:</span>
         <button
@@ -464,9 +465,16 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
             nodeColor={(node) => node.data.color}
             style={{
               backgroundColor: '#1e293b',
-              border: '1px solid #334155'
+              border: '1px solid #334155',
+              position: 'absolute',
+              bottom: '20px',
+              left: '20px',
+              width: '200px',
+              height: '150px'
             }}
             maskColor="#0f172a88"
+            pannable={true}
+            zoomable={true}
           />
         )}
       </ReactFlow>

@@ -18,7 +18,7 @@ import CustomNode from '../CustomNode.js';
 import CustomEdge from '../CustomEdge.js';
 import SearchBar from '../SearchBar/SearchBar.js';
 import type { JobData, GraphNode, GraphEdge } from '../../types/index.js';
-import { parseJobData, type LayoutDirection } from '../../utils/dataParser.js';
+import { parseJobData, type LayoutDirection, type LayoutAlgorithm, type LayoutOptions } from '../../utils/dataParser.js';
 
 interface GraphProps {
   data: JobData[];
@@ -42,6 +42,8 @@ const PERFORMANCE_SETTINGS = {
 const GraphComponent: React.FC<GraphProps> = ({ data }) => {
   const { fitView, setCenter, getNode } = useReactFlow();
   const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('TB');
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<LayoutAlgorithm>('layered');
+  const [edgeRouting, setEdgeRouting] = useState<'ORTHOGONAL' | 'POLYLINE' | 'SPLINES'>('ORTHOGONAL');
   const [isLoading, setIsLoading] = useState(false);
   const [showEdges, setShowEdges] = useState(true);
   const [showMiniMap, setShowMiniMap] = useState(false);
@@ -54,20 +56,22 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
     return index;
   }, []);
   
-  const calculateLayout = useCallback((jobData: JobData[], direction: LayoutDirection) => {
+  const calculateLayout = useCallback(async (jobData: JobData[], options: LayoutOptions) => {
     setIsLoading(true);
-    // Use setTimeout to allow UI to update before heavy calculation
-    return new Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }>((resolve) => {
-      setTimeout(() => {
-        const result = parseJobData(jobData, direction);
-        // Build search index
-        result.nodes.forEach(node => {
-          searchIndex.set(node.id.toLowerCase(), node);
-        });
-        setIsLoading(false);
-        resolve(result);
-      }, 0);
-    });
+    try {
+      const result = await parseJobData(jobData, options);
+      // Build search index
+      result.nodes.forEach(node => {
+        searchIndex.set(node.id.toLowerCase(), node);
+      });
+      setIsLoading(false);
+      return result;
+    } catch (error) {
+      console.error('Layout calculation failed:', error);
+      setIsLoading(false);
+      // Return empty result on error
+      return { nodes: [], edges: [] };
+    }
   }, [searchIndex]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -75,14 +79,21 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
 
   // Initial load and layout changes
   useEffect(() => {
-    calculateLayout(data, layoutDirection).then((newData) => {
+    const layoutOptions: LayoutOptions = {
+      direction: layoutDirection,
+      algorithm: layoutAlgorithm,
+      edgeRouting: edgeRouting,
+      spacing: 50
+    };
+    
+    calculateLayout(data, layoutOptions).then((newData) => {
       startTransition(() => {
         setNodes(newData.nodes);
         setEdges(showEdges ? newData.edges : []);
         setTimeout(() => fitView({ padding: 0.1, maxZoom: 1.5 }), 100);
       });
     });
-  }, [data, layoutDirection, showEdges, calculateLayout, setNodes, setEdges, fitView]);
+  }, [data, layoutDirection, layoutAlgorithm, edgeRouting, showEdges, calculateLayout, setNodes, setEdges, fitView]);
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -208,47 +219,103 @@ const GraphComponent: React.FC<GraphProps> = ({ data }) => {
         </div>
       )}
       
-      {/* Performance options */}
-      {showPerformanceOptions && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          zIndex: 5,
-          backgroundColor: '#1e293b',
-          padding: '12px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '4px' }}>
-            Performance Options ({data.length} nodes)
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '14px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={showEdges}
-              onChange={(e) => setShowEdges(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            Show edges
-          </label>
-          <div style={{ color: '#64748b', fontSize: '11px', marginTop: '4px' }}>
-            Click edges to highlight connections
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '14px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={showMiniMap}
-              onChange={(e) => setShowMiniMap(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            Show minimap
-          </label>
+      {/* Layout & Performance options */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        zIndex: 5,
+        backgroundColor: '#1e293b',
+        padding: '12px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        maxWidth: '250px'
+      }}>
+        {/* Algorithm selector */}
+        <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '4px' }}>
+          Layout Algorithm
         </div>
-      )}
+        <select
+          value={layoutAlgorithm}
+          onChange={(e) => setLayoutAlgorithm(e.target.value as LayoutAlgorithm)}
+          disabled={isLoading || isPending}
+          style={{
+            backgroundColor: '#334155',
+            color: '#e2e8f0',
+            border: '1px solid #475569',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            fontSize: '14px',
+            cursor: isLoading || isPending ? 'not-allowed' : 'pointer',
+            opacity: isLoading || isPending ? 0.5 : 1
+          }}
+        >
+          <option value="layered">Layered (Hierarchical)</option>
+          <option value="force">Force-directed</option>
+          <option value="stress">Stress</option>
+          <option value="mrtree">Tree</option>
+          <option value="radial">Radial</option>
+          <option value="disco">Disco</option>
+          <option value="sporeOverlap">Spore Overlap</option>
+          <option value="sporeCompaction">Spore Compaction</option>
+        </select>
+
+        {/* Edge routing selector */}
+        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '8px', marginBottom: '4px' }}>
+          Edge Routing
+        </div>
+        <select
+          value={edgeRouting}
+          onChange={(e) => setEdgeRouting(e.target.value as 'ORTHOGONAL' | 'POLYLINE' | 'SPLINES')}
+          disabled={isLoading || isPending}
+          style={{
+            backgroundColor: '#334155',
+            color: '#e2e8f0',
+            border: '1px solid #475569',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            fontSize: '14px',
+            cursor: isLoading || isPending ? 'not-allowed' : 'pointer',
+            opacity: isLoading || isPending ? 0.5 : 1
+          }}
+        >
+          <option value="ORTHOGONAL">Orthogonal</option>
+          <option value="POLYLINE">Polyline</option>
+          <option value="SPLINES">Splines</option>
+        </select>
+
+        {showPerformanceOptions && (
+          <>
+            <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '8px', marginBottom: '4px' }}>
+              Performance ({data.length} nodes)
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '14px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showEdges}
+                onChange={(e) => setShowEdges(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              Show edges
+            </label>
+            <div style={{ color: '#64748b', fontSize: '11px' }}>
+              Click edges to highlight connections
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '14px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showMiniMap}
+                onChange={(e) => setShowMiniMap(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              Show minimap
+            </label>
+          </>
+        )}
+      </div>
       
       {/* Layout Direction Selector */}
       <div style={{

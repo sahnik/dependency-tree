@@ -1,86 +1,183 @@
-import dagre from 'dagre';
+import ELK from 'elkjs/lib/elk.bundled.js';
 import { MarkerType } from 'reactflow';
 import type { JobData, GraphNode, GraphEdge } from '../types/index.js';
+
+const elk = new ELK();
 
 const nodeWidth = 172;
 const nodeHeight = 36;
 
 export type LayoutDirection = 'TB' | 'BT' | 'LR' | 'RL';
 
-export function parseJobData(
+export type LayoutAlgorithm = 'layered' | 'force' | 'stress' | 'mrtree' | 'radial' | 'disco' | 'sporeOverlap' | 'sporeCompaction';
+
+export interface LayoutOptions {
+  direction?: LayoutDirection;
+  algorithm?: LayoutAlgorithm;
+  spacing?: number;
+  edgeRouting?: 'POLYLINE' | 'ORTHOGONAL' | 'SPLINES';
+}
+
+export async function parseJobData(
   data: JobData[], 
-  direction: LayoutDirection = 'TB'
-): { nodes: GraphNode[]; edges: GraphEdge[] } {
+  options: LayoutOptions = {}
+): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
+  const {
+    direction = 'TB',
+    algorithm = 'layered',
+    spacing = 50,
+    edgeRouting = 'ORTHOGONAL'
+  } = options;
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   
-  // Create a new directed graph
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  
-  // Set graph options
-  dagreGraph.setGraph({
-    rankdir: direction,
-    align: 'UL',
-    nodesep: 50,
-    ranksep: 50,
-    marginx: 20,
-    marginy: 20
-  });
+  // Map direction to ELK format
+  const elkDirection = {
+    'TB': 'DOWN',
+    'BT': 'UP',
+    'LR': 'RIGHT',
+    'RL': 'LEFT'
+  }[direction];
 
-  // Create nodes and add them to the dagre graph
-  data.forEach((job) => {
-    const node: GraphNode = {
-      id: job.job,
-      type: 'custom',
-      data: {
-        label: job.job,
-        sources: job.sources,
-        targets: job.targets,
-        color: job.color || '#6366f1'
-      },
-      position: { x: 0, y: 0 } // Will be updated by dagre
-    };
-    
-    nodes.push(node);
-    dagreGraph.setNode(job.job, { width: nodeWidth, height: nodeHeight });
-  });
+  // Create ELK nodes
+  const elkNodes = data.map((job) => ({
+    id: job.job,
+    width: nodeWidth,
+    height: nodeHeight,
+    labels: [{ text: job.job }],
+    layoutOptions: {
+      'nodeLabels.placement': '[H_CENTER, V_CENTER, INSIDE]'
+    }
+  }));
 
-  // Create edges and add them to the dagre graph
+  // Create ELK edges
+  const elkEdges: any[] = [];
   data.forEach((job) => {
     job.dependencies.forEach((dep) => {
-      // Check if the dependency exists as a node
       if (data.some(j => j.job === dep)) {
-        edges.push({
+        elkEdges.push({
           id: `${dep}-${job.job}`,
-          source: dep,
-          target: job.job,
-          type: 'custom',
-          animated: false,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 20,
-            height: 20,
-            color: '#64748b',
-          }
+          sources: [dep],
+          targets: [job.job]
         });
-        
-        dagreGraph.setEdge(dep, job.job);
       }
     });
   });
 
-  // Run the layout algorithm
-  dagre.layout(dagreGraph);
+  // Configure layout options based on algorithm
+  const layoutOptions: any = {
+    'elk.algorithm': algorithm,
+    'elk.direction': elkDirection,
+    'elk.spacing.nodeNode': spacing,
+    'elk.spacing.edgeNode': spacing * 0.5,
+    'elk.layered.spacing.nodeNodeBetweenLayers': spacing * 1.5,
+    'elk.edgeRouting': edgeRouting,
+  };
 
-  // Update node positions with the calculated layout
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2
-    };
-  });
+  // Algorithm-specific options
+  if (algorithm === 'layered') {
+    layoutOptions['elk.layered.thoroughness'] = 7;
+    layoutOptions['elk.layered.nodePlacement.strategy'] = 'NETWORK_SIMPLEX';
+    layoutOptions['elk.layered.crossingMinimization.strategy'] = 'LAYER_SWEEP';
+  } else if (algorithm === 'force') {
+    layoutOptions['elk.force.iterations'] = 300;
+    layoutOptions['elk.force.repulsivePower'] = 2;
+  } else if (algorithm === 'stress') {
+    layoutOptions['elk.stress.desiredEdgeLength'] = spacing * 2;
+  } else if (algorithm === 'mrtree') {
+    layoutOptions['elk.mrtree.searchOrder'] = 'DFS';
+  }
 
-  return { nodes, edges };
+  // Create the graph structure for ELK
+  const graph = {
+    id: 'root',
+    layoutOptions,
+    children: elkNodes,
+    edges: elkEdges
+  };
+
+  try {
+    // Run the layout algorithm
+    const layoutedGraph = await elk.layout(graph);
+
+    // Create React Flow nodes from ELK results
+    layoutedGraph.children?.forEach((elkNode) => {
+      const jobData = data.find(j => j.job === elkNode.id)!;
+      nodes.push({
+        id: elkNode.id,
+        type: 'custom',
+        data: {
+          label: jobData.job,
+          sources: jobData.sources,
+          targets: jobData.targets,
+          color: jobData.color || '#6366f1'
+        },
+        position: { x: elkNode.x || 0, y: elkNode.y || 0 }
+      });
+    });
+
+    // Create React Flow edges
+    elkEdges.forEach((elkEdge) => {
+      edges.push({
+        id: elkEdge.id,
+        source: elkEdge.sources[0],
+        target: elkEdge.targets[0],
+        type: 'custom',
+        animated: false,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#64748b',
+        }
+      });
+    });
+
+    return { nodes, edges };
+  } catch (error) {
+    console.error('Layout failed:', error);
+    // Fallback to simple grid layout
+    const cols = Math.ceil(Math.sqrt(data.length));
+    data.forEach((job, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      nodes.push({
+        id: job.job,
+        type: 'custom',
+        data: {
+          label: job.job,
+          sources: job.sources,
+          targets: job.targets,
+          color: job.color || '#6366f1'
+        },
+        position: {
+          x: col * (nodeWidth + spacing),
+          y: row * (nodeHeight + spacing)
+        }
+      });
+    });
+
+    // Still create edges
+    data.forEach((job) => {
+      job.dependencies.forEach((dep) => {
+        if (data.some(j => j.job === dep)) {
+          edges.push({
+            id: `${dep}-${job.job}`,
+            source: dep,
+            target: job.job,
+            type: 'custom',
+            animated: false,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#64748b',
+            }
+          });
+        }
+      });
+    });
+
+    return { nodes, edges };
+  }
 }

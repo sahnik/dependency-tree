@@ -3,6 +3,13 @@ import Graph from './components/Graph/Graph.js';
 import type { JobData } from './types/index.js';
 import { loadDataFromFile } from './utils/dataLoader.js';
 import { generateTestData, generateRealisticTestData } from './utils/generateTestData.js';
+import { 
+  generateSimpleTestData, 
+  generateComplexTestData, 
+  generateTreeTestData, 
+  generateNetworkTestData, 
+  generatePipelineTestData 
+} from './utils/testDataGenerator.js';
 import './App.css';
 
 // Sample data for testing
@@ -48,6 +55,7 @@ function App() {
   const [data, setData] = useState<JobData[]>(sampleData);
   const [error, setError] = useState<string>('');
   const [showTestOptions, setShowTestOptions] = useState(false);
+  const [testDataType, setTestDataType] = useState<'simple' | 'complex'>('simple');
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -136,31 +144,91 @@ function App() {
             backgroundColor: '#0f172a',
             padding: '12px',
             borderRadius: '6px',
-            border: '1px solid #334155'
+            border: '1px solid #334155',
+            minWidth: '280px'
           }}>
             <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '8px' }}>
-              Load Test Data:
+              Test Data Type:
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              <button onClick={() => loadTestData(50)} style={testButtonStyle}>
-                50 nodes
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+              <button 
+                onClick={() => setTestDataType('simple')} 
+                style={{
+                  ...testButtonStyle,
+                  backgroundColor: testDataType === 'simple' ? '#3b82f6' : '#334155'
+                }}
+              >
+                Simple
               </button>
-              <button onClick={() => loadTestData(100)} style={testButtonStyle}>
-                100 nodes
-              </button>
-              <button onClick={() => loadTestData(500)} style={testButtonStyle}>
-                500 nodes
-              </button>
-              <button onClick={() => loadTestData(1000)} style={testButtonStyle}>
-                1000 nodes
-              </button>
-              <button onClick={() => loadRealisticTestData(5)} style={testButtonStyle}>
-                Realistic (Small)
-              </button>
-              <button onClick={() => loadRealisticTestData(15)} style={testButtonStyle}>
-                Realistic (Large)
+              <button 
+                onClick={() => setTestDataType('complex')} 
+                style={{
+                  ...testButtonStyle,
+                  backgroundColor: testDataType === 'complex' ? '#3b82f6' : '#334155'
+                }}
+              >
+                Complex
               </button>
             </div>
+            
+            {testDataType === 'simple' && (
+              <>
+                <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '8px' }}>
+                  Basic Test Data:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <button onClick={() => { setData(generateSimpleTestData()); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Pipeline (7 nodes)
+                  </button>
+                  <button onClick={() => loadTestData(50)} style={testButtonStyle}>
+                    Random (50 nodes)
+                  </button>
+                  <button onClick={() => loadTestData(100)} style={testButtonStyle}>
+                    Random (100 nodes)
+                  </button>
+                  <button onClick={() => loadRealisticTestData(5)} style={testButtonStyle}>
+                    Realistic (Small)
+                  </button>
+                  <button onClick={() => loadRealisticTestData(15)} style={testButtonStyle}>
+                    Realistic (Large)
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {testDataType === 'complex' && (
+              <>
+                <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '8px' }}>
+                  Complex Layouts:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <button onClick={() => { setData(generateComplexTestData(100)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Layered DAG (100)
+                  </button>
+                  <button onClick={() => { setData(generateComplexTestData(500)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Layered DAG (500)
+                  </button>
+                  <button onClick={() => { setData(generateComplexTestData(1000)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Layered DAG (1000)
+                  </button>
+                  <button onClick={() => { setData(generateTreeTestData(100, 3)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Tree (100, b=3)
+                  </button>
+                  <button onClick={() => { setData(generateTreeTestData(500, 2)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Tree (500, b=2)
+                  </button>
+                  <button onClick={() => { setData(generateNetworkTestData(100, 0.1)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Network (100)
+                  </button>
+                  <button onClick={() => { setData(generateNetworkTestData(500, 0.05)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Network (500)
+                  </button>
+                  <button onClick={() => { setData(generatePipelineTestData(8, 5)); setShowTestOptions(false); }} style={testButtonStyle}>
+                    Pipeline (8 stages)
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
         
